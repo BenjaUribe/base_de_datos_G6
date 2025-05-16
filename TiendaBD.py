@@ -7,8 +7,8 @@ def graficar_ventas(n, ano):
     try:
         conn = psycopg2.connect(
             dbname="venta_juegos",
-            user="postgres",
-            password="zawarudo",
+            user="admin",
+            password="Admin132",
             host="localhost",
             port="5432"
         )

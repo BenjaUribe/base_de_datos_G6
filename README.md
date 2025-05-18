@@ -1,1 +1,1 @@
-Clonar base datos: psql -U user -d nombre_base_datos -f Base_datos.sql
+Nuestra base de datos gira en torno a una tienda de videojuegos. Esta tienda posee sucursales en diferentes comunas y regiones del paises en las cuales los clientes compran productos fisicos y virtuales. 

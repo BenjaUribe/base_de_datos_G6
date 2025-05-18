@@ -193,13 +193,13 @@ def graficar_ventas(n, ano):
             archivo = os.path.join(carpeta, f'compras_multijugador_por_rango_{ano}.png')
             plt.savefig(archivo)
             plt.close()
-
+        
         elif n == 4:
             query = """
                 SELECT count(id_juego) AS juegos_vendidos, e.nombre AS nombre_estudio FROM hechos_ventas hv
                 JOIN estudio e ON hv.id_estudio = e.id_estudio
                 WHERE EXTRACT(YEAR FROM hv.fecha_compra) = %s
-                GROUP BY e.nombre
+                GROUP BY e.id_estudio
             """
             cursor.execute(query, (ano,))
             resultados = cursor.fetchall()
@@ -280,92 +280,57 @@ def graficar_ventas(n, ano):
             plt.savefig(archivo)
             plt.close()
             print(f"Gráfico guardado en: {archivo}")
-        elif n == 4:
+        
+        elif n == 6:
             query = """
-                SELECT count(id_juego) AS juegos_vendidos, e.nombre AS nombre_estudio FROM hechos_ventas hv
-                JOIN estudio e ON hv.id_estudio = e.id_estudio
+                SELECT 
+                    j.genero,
+                    j.formato,
+                    COUNT(*) AS total
+                FROM hechos_ventas hv
+                JOIN juego j ON hv.id_juego = j.id_juego
                 WHERE EXTRACT(YEAR FROM hv.fecha_compra) = %s
-                GROUP BY e.nombre
+                GROUP BY j.genero, j.formato
+                ORDER BY j.genero, total DESC;
             """
             cursor.execute(query, (ano,))
             resultados = cursor.fetchall()
 
             if not resultados:
-                return  # No hay datos, no grafica
-
-            estudios = [nombre for _, nombre in resultados]
-            juegos_vendidos = [cantidad for cantidad, _ in resultados]
-
-            posiciones = np.arange(len(estudios))
-            plt.figure(figsize=(12, 6))
-            barras = plt.bar(posiciones, juegos_vendidos, color='#E67300')
-
-            plt.xticks(posiciones, estudios, rotation=45, ha='right')
-            plt.ylabel('Cantidad de Juegos Vendidos')
-            plt.xlabel('Estudio')
-            plt.title(f"Total de Juegos Vendidos por Estudio - Año {ano}")
-
-            for barra, total in zip(barras, juegos_vendidos):
-                plt.text(barra.get_x() + barra.get_width()/2, barra.get_height() + 1,
-                        str(total), va='bottom', ha='center', fontsize=9, color='black')
-
-            plt.tight_layout()
-
-            # Crear carpeta y guardar gráfico
-            carpeta = "graficos"
-            os.makedirs(carpeta, exist_ok=True)
-            archivo = os.path.join(carpeta, f'juegos_vendidos_por_estudio_{ano}.png')
-            plt.savefig(archivo)
-            plt.close()
-        elif n == 5:
-            query = """
-            select 
-                EXTRACT(MONTH FROM fecha_compra) AS mes,
-                j.formato AS formato_juego,
-                SUM(hv.precio_clp) AS ingresos_totales_clp
-            from hechos_ventas hv
-            JOIN juego j ON hv.id_juego = j.id_juego
-            JOIN sucursal s ON hv.id_sucursal = s.id_sucursal
-            WHERE EXTRACT(YEAR FROM hv.fecha_compra) = %s
-            GROUP BY j.formato, mes
-            order by mes, ingresos_totales_clp desc
-            """
-            cursor.execute(query, (ano,))
-            resultados = cursor.fetchall()
-            if not resultados:
-                print("No hay datos para graficar.")
+                print("No hay datos disponibles para este análisis.")
                 return
-            
-            meses = list(range(1, 13))
-            ingresos_fisicos = [0] * 12
-            ingresos_digitales = [0] * 12
 
-            for mes, formato, ingresos in resultados:
-                idx = int(mes) - 1
-                if formato == 'Fisico':
-                    ingresos_fisicos[idx] = ingresos
-                elif formato == 'Digital':
-                    ingresos_digitales[idx] = ingresos
-            posiciones = np.arange(len(meses))
+            # Procesar resultados en un diccionario: {genero: {Fisico: x, Digital: y}}
+            datos = {}
+            for genero, formato, total in resultados:
+                if genero not in datos:
+                    datos[genero] = {"Fisico": 0, "Digital": 0}
+                datos[genero][formato.capitalize()] = total
+
+            generos = sorted(datos.keys())
+            fisico = [datos[g].get("Fisico", 0) for g in generos]
+            digital = [datos[g].get("Digital", 0) for g in generos]
+
+            posiciones = np.arange(len(generos))
             ancho = 0.35
 
-            plt.figure(figsize=(12, 6))
-            plt.bar(posiciones - ancho/2, ingresos_fisicos, width=ancho, label='Físico', color='blue')
-            plt.bar(posiciones + ancho/2, ingresos_digitales, width=ancho, label='Digital', color='green')
-            plt.xticks(posiciones,["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"])
-            plt.xlabel('Mes')
-            plt.ylabel('Ingresos CLP')
-            plt.title(f'Ingresos por formato en cada mes - Año {ano}')
+            plt.figure(figsize=(14, 6))
+            plt.bar(posiciones - ancho/2, fisico, width=ancho, label='Físico', color='blue')
+            plt.bar(posiciones + ancho/2, digital, width=ancho, label='Digital', color='green')
+            plt.xticks(posiciones, generos, rotation=45, ha='right')
+            plt.xlabel('Género de Videojuego')
+            plt.ylabel('Total de Ventas')
+            plt.title(f'Formato más popular según género - Año {ano}')
             plt.legend()
             plt.tight_layout()
 
-            # Crear carpeta si no existe
             carpeta = "graficos"
             os.makedirs(carpeta, exist_ok=True)
-            archivo = os.path.join(carpeta, f'ingresos_por_formato_mensual_{ano}.png')
+            archivo = os.path.join(carpeta, f'formato_por_genero{ano}.png')
             plt.savefig(archivo)
             plt.close()
             print(f"Gráfico guardado en: {archivo}")
+
         else:
             print("Esa opción aún no está implementada.")
 
@@ -384,8 +349,8 @@ if __name__ == "__main__":
                 "2. Ingresos históricos por formato de juego en cada región\n"
                 "3. Total de compras multijugador por rango etario\n"
                 "4. Total de juegos vendidos por estudio de videojuegos\n"
-                "5. Total de juegos vendidos por mes, en formato fisico y digital\n"
-                "6. Opción 6\n"
+                "5. Total de juegos vendidos por mes en formato fisico y digital\n"
+                "6. Formato mas vendido por genero de videojuegos\n"
             ))
         except ValueError:
             print("Por favor, ingrese un número válido.")

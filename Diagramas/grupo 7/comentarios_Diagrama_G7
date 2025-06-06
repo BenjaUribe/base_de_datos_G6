@@ -1,0 +1,2 @@
+Las entidades están claras, los atributos también. No se explica pero se puede asumir que los choferes pueden tener varias licencias y por lo tanto se podría 
+inferir que hay que crear una entidad para las licencias. En general esta todo bien especificado se entiende bien el texto y lo necesario para crear cada entidad

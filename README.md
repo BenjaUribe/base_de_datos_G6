@@ -1,13 +1,8 @@
 Especificación:
-Nuestra base de datos gira en torno a las ventas de una cadena de tiendas de videojuegos presencial. Las sucursales estan en todo Chile, cada una identificada con un ID único, y nombrada como el centro comercial o sector en el que se encuentra emplazada. Se almacenan también los ID correspondientes a la comuna y región donde se encuentra cada sucursal. 
+Nuestra base de datos gira en torno a las ventas de una cadena de tiendas de videojuegos presencial.  Cada sucursal está identificada mediante un ID único y lleva el nombre del centro comercial o sector donde se encuentra ubicada. Además, se registra el ID de la comuna y la región correspondiente a cada sucursal.
 
-En las sucursales, los clientes tienen la posibilidad de comprar videojuegos, generando una bolera que guarda la fecha y el monto total a pagar además de un ID, en la cual se pueden cancelar en uno o varios pagos con distintos metodos de pago. Los videojuegos comprados estan en los detalles de la factura y en una factura se pueden comprar varios videojuegos, cada uno de estos contiene el genero al que pertenece la sucursal en la que fue comprado la empresa o estudio que lo desarrolló, su formato, si es fisico o digital, nombre, ID y valor. Los videojuegos son creados por estudios, de los cuales se almacena su ID y nombre. 
+En estas sucursales, los clientes pueden adquirir videojuegos, generándose una factura (boleta) por cada transacción. Esta factura contiene un ID único, la fecha de emisión y el monto total a pagar. El pago puede realizarse en uno o varios abonos, utilizando distintos métodos de pago.
 
-La base de datos también almacena información de los clientes, como su nombre y fecha de nacimiento, sexo y además un ID único.
+Cada factura incluye uno o más videojuegos, cuyos detalles se almacenan en los registros asociados a dicha factura. Por cada videojuego comprado se guarda su género, el nombre de la sucursal donde fue adquirido, el estudio desarrollador, su formato (físico o digital), nombre, ID y valor. Los estudios desarrolladores también están registrados en la base de datos, con su respectivo ID y nombre.
 
-Ejecucion Del Programa:
-La ejecucion del programa consiste en 2 inputs. 
-El primero se le solicitara escoger del 1 al 6 la llamada sql que desea graficas
-El segundo input se le solicitara el año que desea graficar
-
-Una vez ingresado los dos inputs, el programa ejecutara la llamada SQL correspondiente con el año asignado y creara un graficos. Este grafico se encontrara en la carpeta "Graficos"
+Asimismo, se almacena información de los clientes, incluyendo un ID único, nombre completo, fecha de nacimiento y sexo.

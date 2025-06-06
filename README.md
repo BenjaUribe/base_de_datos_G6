@@ -1,5 +1,5 @@
 Especificación:
-Nuestra base de datos gira en torno a las ventas de una cadena de tiendas de videojuegos presencial.  Cada sucursal está identificada mediante un ID único y lleva el nombre del centro comercial o sector donde se encuentra ubicada. Además, se registra el ID de la comuna y la región correspondiente a cada sucursal.
+Nuestra base de datos gira en torno a las ventas de una cadena de tiendas de videojuegos presencial.  Cada sucursal está identificada mediante un ID único y lleva el nombre del centro comercial o sector donde se encuentra ubicada. Además, se registra el numero de la comuna y la región correspondiente a cada sucursal.
 
 En estas sucursales, los clientes pueden adquirir videojuegos, generándose una factura (boleta) por cada transacción. Esta factura contiene un ID único, la fecha de emisión y el monto total a pagar. El pago puede realizarse en uno o varios abonos, utilizando distintos métodos de pago.
 

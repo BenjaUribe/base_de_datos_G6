@@ -2,6 +2,9 @@ import tkinter as tk
 from tkinter import messagebox, scrolledtext
 import psycopg2
 import threading
+import subprocess
+import os
+import time
 
 DB_CONFIG = {
     "dbname": "venta_juegos_t",
@@ -85,6 +88,22 @@ def eliminar_videojuego(id_videojuego):
             cur.execute("DELETE FROM videojuegos WHERE id_videojuego=%s", (id_videojuego,))
     messagebox.showinfo("Éxito", "Videojuego eliminado.")
 
+def vaciar_base():
+    with conectar() as conn:
+        with conn.cursor() as cur:
+            cur.execute("""
+            TRUNCATE clientes, empresas, facturas, generos, ofertas, proveedor, sucursales, videojuegos, detallefactura, empleados, vendedores, proveedorsucursal, stock, videojuegogenero RESTART IDENTITY CASCADE;
+        """)
+    conn.commit()
+    messagebox.showinfo("Éxito", "Base de datos vaciada.")
+
+def ejecutar_insercion():
+    vaciar_base()
+    messagebox.showinfo("Info", "Ejecutando inserción masiva...")
+    ruta = os.path.join(os.path.dirname(__file__), "insercion_datos_transaccional.py")
+    subprocess.run(["python", ruta], check=True)
+    messagebox.showinfo("Éxito", "Inserción masiva finalizada.")
+
 # --- TKINTER ---
 
 class App(tk.Tk):
@@ -97,7 +116,6 @@ class App(tk.Tk):
         self.menu_screen()
 
     def bloquear_cerrar(self):
-        # No hace nada, así se bloquea el botón X de la ventana
         pass
 
     def clear(self):
@@ -155,7 +173,7 @@ class App(tk.Tk):
         else:
             messagebox.showerror("Error", "Opción no válida o no implementada en este ejemplo.")
 
-    def pantalla_cargando_insercion(self):
+    def pantalla_cargando_datos_prueba(self):
         self.clear()
         self.cargando_label = tk.Label(self, text="Cargando...", font=("Arial", 18))
         self.cargando_label.pack(pady=30)
@@ -186,8 +204,7 @@ class App(tk.Tk):
         self.after(0, self.menu_screen)
 
     def ejecutar_insercion_masiva(self):
-        # Aquí va tu lógica real de inserción masiva
-        import time
+        
         time.sleep(3)  # Simula proceso largo
         self.after(0, lambda: messagebox.showinfo("Info", "Inserción masiva ejecutada."))
 

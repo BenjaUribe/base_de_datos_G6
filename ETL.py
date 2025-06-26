@@ -1,17 +1,18 @@
 import psycopg2
 from datetime import date
+import time
 
 ANALISIS = {
     "dbname": "venta_juegos",
     "user": "postgres",
-    "password": "zawarudo",
+    "password": "123",
     "host": "localhost",
     "port": "5432"
 }
 TRANSACCIONAL = {
     "dbname": "venta_juegos_t",
     "user": "postgres",
-    "password": "zawarudo",
+    "password": "123",
     "host": "localhost",
     "port": "5432"
 }
@@ -233,5 +234,9 @@ Insertando hechos_ventas:
         print("Sincronización completada.")
 
 if __name__ == "__main__":
-    vaciar_base_analisis()
-    sincronizar_y_mostrar()
+    while True:
+        print("Ejecutando ETL...")
+        vaciar_base_analisis()
+        sincronizar_y_mostrar()
+        print("Esperando 1 minuto para la próxima ejecución...")
+        time.sleep(60)

@@ -99,6 +99,7 @@ def vaciar_base():
 
 def ejecutar_insercion():
     vaciar_base()
+    print("lol")
     messagebox.showinfo("Info", "Ejecutando inserción masiva...")
     ruta = os.path.join(os.path.dirname(__file__), "insercion_datos_transaccional.py")
     subprocess.run(["python", ruta], check=True)
@@ -167,15 +168,15 @@ class App(tk.Tk):
         elif opcion == '10':
             self.pantalla_listar_proveedores()
         elif opcion == '11':
-            self.pantalla_cargando_datos_prueba()
+            self.pantalla_cargando_datos()
         elif opcion == '12':
             self.quit()
         else:
             messagebox.showerror("Error", "Opción no válida o no implementada en este ejemplo.")
 
-    def pantalla_cargando_datos_prueba(self):
+    def pantalla_cargando_datos(self):
         self.clear()
-        self.cargando_label = tk.Label(self, text="Cargando...", font=("Arial", 18))
+        self.cargando_label = tk.Label(self, text="Cargando datos de prueba...", font=("Arial", 18))
         self.cargando_label.pack(pady=30)
         self.tiempo_espera = 0
         self.tiempo_label = tk.Label(self, text="Tiempo transcurrido: 0 s", font=("Arial", 14))
@@ -183,10 +184,10 @@ class App(tk.Tk):
         self._cronometro_activo = True
         self._actualizar_cronometro()
         self.update()
-        if hasattr(self, '_insercion_en_progreso') and self._insercion_en_progreso:
+        if hasattr(self, '_carga_en_progreso') and self._carga_en_progreso:
             return
-        self._insercion_en_progreso = True
-        threading.Thread(target=self.ejecutar_insercion_masiva_safe, daemon=True).start()
+        self._carga_en_progreso = True
+        threading.Thread(target=self.cargar_datos_prueba_safe, daemon=True).start()
 
     def _actualizar_cronometro(self):
         if getattr(self, '_cronometro_activo', False):
@@ -194,19 +195,22 @@ class App(tk.Tk):
             self.tiempo_label.config(text=f"Tiempo transcurrido: {self.tiempo_espera} s")
             self.after(1000, self._actualizar_cronometro)
 
-    def ejecutar_insercion_masiva_safe(self):
+    def cargar_datos_prueba_safe(self):
         try:
-            self.ejecutar_insercion_masiva()
+            self.cargar_datos_prueba()
         except Exception as e:
             self.after(0, lambda: messagebox.showerror("Error", str(e)))
-        self._insercion_en_progreso = False
+        self._carga_en_progreso = False
         self._cronometro_activo = False
         self.after(0, self.menu_screen)
 
-    def ejecutar_insercion_masiva(self):
-        
-        time.sleep(3)  # Simula proceso largo
-        self.after(0, lambda: messagebox.showinfo("Info", "Inserción masiva ejecutada."))
+    def cargar_datos_prueba(self):
+        # Ejecutar la inserción masiva mientras se muestra la pantalla de carga
+        try:
+            ejecutar_insercion()
+            self.after(0, lambda: messagebox.showinfo("Info", "Datos de prueba cargados."))
+        except Exception as e:
+            self.after(0, lambda: messagebox.showerror("Error", str(e)))
 
     def pantalla_ingresar_cliente(self):
         self.clear()

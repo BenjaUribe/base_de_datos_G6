@@ -8,8 +8,8 @@ import time
 # Conectar a la base de datos PostgreSQL
 conn = psycopg2.connect(
     dbname="venta_juegos",  # Cambia esto por el nombre de tu base de datos
-    user="admin",   # Cambia esto por tu nombre de usuario
-    password="Admin132",  # Cambia esto por tu contraseña
+    user="postgres",   # Cambia esto por tu nombre de usuario
+    password="zawarudo",  # Cambia esto por tu contraseña
     host="localhost",     # Cambia esto si tu base de datos está en otro host
     port="5432"           # Cambia esto si tu base de datos usa un puerto diferente
 )

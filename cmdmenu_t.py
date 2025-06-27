@@ -3,9 +3,9 @@ import subprocess
 import os
 
 DB_CONFIG = {
-    "dbname": "venta_juegos_t",
-    "user": "admin",
-    "password": "Admin132",
+    "dbname": "Base_datos_t",
+    "user": "postgres",
+    "password": "0987",
     "host": "localhost",
     "port": "5432"
 }

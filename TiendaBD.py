@@ -6,160 +6,145 @@ import numpy as np
 def graficar_ventas(n, ano):
     try:
         conn = psycopg2.connect(
-            dbname="venta_juegos",
-            user="admin",
-            password="Admin132",
+            dbname="base_datos",
+            user="postgres",
+            password="0987",
             host="localhost",
             port="5432"
         )
         cursor = conn.cursor()
         
         if n == 1:
+            # Obtener todas las regiones
+            cursor.execute("SELECT region_nombre FROM region ORDER BY region_nombre;")
+            todas_regiones = [r[0] for r in cursor.fetchall()]
+
+            # Obtener ingresos por formato y región (incluyendo regiones sin ventas)
             query = """
                 SELECT
-                    s.region AS region,
-                    j.formato AS formato_juego,
-                    SUM(hv.precio_clp) AS ingresos_totales_clp
-                FROM hechos_ventas hv
-                JOIN juego j ON hv.id_juego = j.id_juego
-                JOIN sucursal s ON hv.id_sucursal = s.id_sucursal
-                WHERE EXTRACT(YEAR FROM hv.fecha_compra) = %s
-                GROUP BY s.region, j.formato
-                ORDER BY s.region, ingresos_totales_clp DESC;
-            """
-            cursor.execute(query, (ano,))
-            resultados = cursor.fetchall()
-
-            regiones = {}
-            for region, formato, ingresos in resultados:
-                if region not in regiones:
-                    regiones[region] = {"Fisico":0, "Digital":0}
-                regiones[region][formato.capitalize()] = ingresos
-
-            regiones_ordenadas = sorted(regiones.keys())
-            ingresos_fisicos = [regiones[r].get("Fisico", 0) for r in regiones_ordenadas]
-            ingresos_digitales = [regiones[r].get("Digital", 0) for r in regiones_ordenadas]
-
-            posiciones = np.arange(len(regiones_ordenadas))
-            ancho = 0.35
-
-            plt.figure(figsize=(12,6))
-            plt.bar(posiciones - ancho/2, ingresos_fisicos, width=ancho, label='Físico', color='blue')
-            plt.bar(posiciones + ancho/2, ingresos_digitales, width=ancho, label='Digital', color='green')
-            plt.xticks(posiciones, regiones_ordenadas, rotation=45, ha='right')
-            plt.xlabel('Región')
-            plt.ylabel('Ingresos CLP')
-            plt.title(f'Ingresos por formato en todas las regiones - Año {ano}')
-            plt.legend()
-            plt.tight_layout()
-
-            # Crear carpeta si no existe
-            carpeta = "graficos"
-            if not os.path.exists(carpeta):
-                os.makedirs(carpeta)
-
-            # Guardar gráfico en carpeta con nombre
-            archivo = os.path.join(carpeta, f'ingresos_por_formato_{ano}.png')
-            plt.savefig(archivo)
-            plt.close()
-
-            print(f"Gráfico guardado en: {archivo}")
-        elif n == 2:
-            query = """
-                SELECT
-                    s.region,
-                    j.genero,
-                    COUNT(*) AS total_ventas,
-                    ROW_NUMBER() OVER (PARTITION BY s.region ORDER BY COUNT(*) DESC) AS rank
-                FROM hechos_ventas hv
-                JOIN juego j ON hv.id_juego = j.id_juego
-                JOIN sucursal s ON hv.id_sucursal = s.id_sucursal
-                WHERE EXTRACT(YEAR FROM hv.fecha_compra) = %s
-                GROUP BY s.region, j.genero
-                HAVING COUNT(*) > 0
-                ORDER BY s.region, total_ventas DESC;
+                    r.region_nombre AS region,
+                    f.formato AS formato_juego,
+                    COALESCE(SUM(hv.precio_clp), 0) AS ingresos_totales_clp
+                FROM region r
+                CROSS JOIN formato f
+                LEFT JOIN hechos_ventas hv ON hv.id_region = r.id_region AND hv.id_formato = f.id_formato AND EXTRACT(YEAR FROM hv.fecha_compra) = %s
+                GROUP BY r.region_nombre, f.formato
+                ORDER BY r.region_nombre, f.formato;
             """
             cursor.execute(query, (ano,))
             resultados = cursor.fetchall()
 
             if not resultados:
-                return  # No se hace nada si no hay resultados
+                print("⚠️ No hay datos disponibles para este año.")
+                return
 
-            # Diccionario para almacenar por región el top 1 y top 2
-            datos_region = {}
-            for region, genero, total, rank in resultados:
-                if region not in datos_region:
-                    datos_region[region] = {1: None, 2: None}
-                if rank in (1, 2):
-                    datos_region[region][rank] = (genero, total)
+            # Organizar resultados en: {region: {"Fisico": valor, "Digital": valor}}
+            datos = {region: {"Fisico": 0, "Digital": 0} for region in todas_regiones}
+            for region, formato, ingresos in resultados:
+                datos[region][formato.capitalize()] = ingresos
 
-            regiones = sorted(datos_region.keys())
+            regiones = sorted(datos.keys())
+            ingresos_fisicos = [datos[r].get("Fisico", 0) for r in regiones]
+            ingresos_digitales = [datos[r].get("Digital", 0) for r in regiones]
 
-            top1_ventas = []
-            top1_generos = []
-            top2_ventas = []
-            top2_generos = []
-
-            for region in regiones:
-                top1 = datos_region[region][1]
-                top2 = datos_region[region][2]
-
-                if top1:
-                    top1_generos.append(top1[0])
-                    top1_ventas.append(top1[1])
-                else:
-                    top1_generos.append("")
-                    top1_ventas.append(0)
-
-                if top2:
-                    top2_generos.append(top2[0])
-                    top2_ventas.append(top2[1])
-                else:
-                    top2_generos.append("")
-                    top2_ventas.append(0)
-
+            # Crear gráfico
             posiciones = np.arange(len(regiones))
-            ancho = 0.4
+            ancho = 0.35
 
-            plt.figure(figsize=(14, 7))
+            plt.figure(figsize=(14, 6))
+            plt.bar(posiciones - ancho/2, ingresos_fisicos, width=ancho, label='Físico', color='blue')
+            plt.bar(posiciones + ancho/2, ingresos_digitales, width=ancho, label='Digital', color='green')
 
-            barras1 = plt.barh(posiciones - ancho/2, top1_ventas, height=ancho, color='black', label='Género más vendido')
-            barras2 = plt.barh(posiciones + ancho/2, top2_ventas, height=ancho, color='purple', label='Segundo género más vendido')
-
-            plt.yticks(posiciones, regiones)
-            plt.xlabel('Cantidad de Ventas')
-            plt.title(f"Géneros más vendidos por región - Año {ano}")
+            plt.xticks(posiciones, regiones, rotation=45, ha='right')
+            plt.xlabel('Región')
+            plt.ylabel('Ingresos CLP')
+            plt.title(f'Ingresos por Formato y Región - Año {ano}')
             plt.legend()
-
-            # Texto dentro de barras - top1 (negro, texto blanco)
-            for barra, genero in zip(barras1, top1_generos):
-                if barra.get_width() > 0:
-                    plt.text(barra.get_width() * 0.02, barra.get_y() + barra.get_height()/2,
-                            genero, va='center', ha='left', fontsize=9, color='white')
-
-            # Texto dentro de barras - top2 (morado, texto blanco)
-            for barra, genero in zip(barras2, top2_generos):
-                if barra.get_width() > 0:
-                    plt.text(barra.get_width() * 0.02, barra.get_y() + barra.get_height()/2,
-                            genero, va='center', ha='left', fontsize=9, color='white')
-
             plt.tight_layout()
 
-            carpeta = "graficos"
+            # Guardar gráfico
+            carpeta = os.path.join("graficos", str(ano))
             os.makedirs(carpeta, exist_ok=True)
-
-            archivo = os.path.join(carpeta, f'generos_top2_por_region_{ano}.png')
+            archivo = os.path.join(carpeta, f'ingresos_por_formato_region_{ano}.png')
             plt.savefig(archivo)
             plt.close()
+            print(f"Gráfico guardado en: {archivo}")
+
+        elif n == 2:
+            # Mostrar los 2 géneros más comprados por cada región
+            query = """
+                SELECT region, nombre_genero, total FROM (
+                    SELECT 
+                        r.region_nombre AS region,
+                        g.nombre_genero,
+                        COUNT(*) AS total,
+                        ROW_NUMBER() OVER (PARTITION BY r.region_nombre ORDER BY COUNT(*) DESC) as rn
+                    FROM hechos_ventas hv
+                    JOIN region r ON hv.id_region = r.id_region
+                    JOIN genero g ON hv.id_genero = g.id_genero
+                    WHERE EXTRACT(YEAR FROM hv.fecha_compra) = %s
+                    GROUP BY r.region_nombre, g.nombre_genero
+                ) t
+                WHERE rn <= 2
+                ORDER BY region, total DESC;
+            """
+            cursor.execute(query, (ano,))
+            resultados = cursor.fetchall()
+
+            if not resultados:
+                print("No hay datos disponibles para este análisis.")
+                return
+
+            # Organizar resultados: {region: [(genero, total), (genero, total)]}
+            datos = {}
+            for region, genero, total in resultados:
+                if region not in datos:
+                    datos[region] = []
+                datos[region].append((genero, total))
+
+            regiones = list(datos.keys())
+            generos_1 = [datos[r][0][0] if len(datos[r]) > 0 else '' for r in regiones]
+            generos_2 = [datos[r][1][0] if len(datos[r]) > 1 else '' for r in regiones]
+            totales_1 = [datos[r][0][1] if len(datos[r]) > 0 else 0 for r in regiones]
+            totales_2 = [datos[r][1][1] if len(datos[r]) > 1 else 0 for r in regiones]
+
+            posiciones = np.arange(len(regiones))
+            ancho = 0.35
+
+            plt.figure(figsize=(16, 7))
+            barras1 = plt.bar(posiciones - ancho/2, totales_1, width=ancho, label='1er Género', color='blue')
+            barras2 = plt.bar(posiciones + ancho/2, totales_2, width=ancho, label='2do Género', color='green')
+
+            plt.xticks(posiciones, regiones, rotation=45, ha='right')
+            plt.ylabel('Total de Compras')
+            plt.xlabel('Región')
+            plt.title(f'Los 2 géneros más comprados por región - Año {ano}')
+            plt.legend()
+            plt.tight_layout()
+
+            # Etiquetas con el nombre del género sobre cada barra (vertical y en negrita)
+            for barra, genero in zip(barras1, generos_1):
+                plt.text(barra.get_x() + barra.get_width()/2, barra.get_height() + 0.5,
+                        genero, ha='center', va='bottom', fontsize=9, color='black', rotation=90, fontweight='bold')
+            for barra, genero in zip(barras2, generos_2):
+                plt.text(barra.get_x() + barra.get_width()/2, barra.get_height() + 0.5,
+                        genero, ha='center', va='bottom', fontsize=9, color='black', rotation=90, fontweight='bold')
+
+            carpeta = os.path.join("graficos", str(ano))
+            os.makedirs(carpeta, exist_ok=True)
+            archivo = os.path.join(carpeta, f'top2_generos_por_region_{ano}.png')
+            plt.savefig(archivo)
+            plt.close()
+            print(f"Gráfico guardado en: {archivo}")
+
         elif n == 3:
             query = """
                 SELECT
                     re.rango,
                     COUNT(*) AS total_compras
                 FROM hechos_ventas hv
-                JOIN juego j ON hv.id_juego = j.id_juego
                 JOIN rango_etario re ON hv.id_rango_etario = re.id_rango_etario
-                WHERE j.multiplayer = 'Si'
+                WHERE hv.id_multiplayer = 1
                 AND EXTRACT(YEAR FROM hv.fecha_compra) = %s
                 GROUP BY re.rango
                 ORDER BY total_compras DESC;
@@ -188,61 +173,78 @@ def graficar_ventas(n, ano):
             plt.tight_layout()
 
             # Crear carpeta y guardar gráfico
-            carpeta = "graficos"
+            carpeta = os.path.join("graficos", str(ano))
             os.makedirs(carpeta, exist_ok=True)
             archivo = os.path.join(carpeta, f'compras_multijugador_por_rango_{ano}.png')
             plt.savefig(archivo)
             plt.close()
         
         elif n == 4:
+            # Gráfico de línea: Total de ventas por mes, con dos líneas (HOMBRES y MUJERES)
+            # Ajuste: Usar id_sexo directamente desde hechos_ventas (si existe)
             query = """
-                SELECT count(id_juego) AS juegos_vendidos, e.nombre AS nombre_estudio FROM hechos_ventas hv
-                JOIN estudio e ON hv.id_estudio = e.id_estudio
+                SELECT 
+                    EXTRACT(MONTH FROM hv.fecha_compra) AS mes,
+                    CASE hv.id_sexo
+                        WHEN 1 THEN 'Hombres'
+                        WHEN 2 THEN 'Mujeres'
+                        ELSE 'Otro'
+                    END AS genero_cliente,
+                    COUNT(*) AS total_ventas
+                FROM hechos_ventas hv
                 WHERE EXTRACT(YEAR FROM hv.fecha_compra) = %s
-                GROUP BY e.id_estudio
+                GROUP BY mes, genero_cliente
+                ORDER BY mes, genero_cliente;
             """
             cursor.execute(query, (ano,))
             resultados = cursor.fetchall()
 
-            if not resultados:
-                return  # No hay datos, no grafica
+            # Inicializar estructura para 12 meses
+            meses = list(range(1, 13))
+            ventas_hombres = [0] * 12
+            ventas_mujeres = [0] * 12
 
-            estudios = [nombre for _, nombre in resultados]
-            juegos_vendidos = [cantidad for cantidad, _ in resultados]
+            for mes, genero, total in resultados:
+                idx = int(mes) - 1
+                if genero == 'Hombres':
+                    ventas_hombres[idx] = total
+                elif genero == 'Mujeres':
+                    ventas_mujeres[idx] = total
 
-            posiciones = np.arange(len(estudios))
-            plt.figure(figsize=(12, 6))
-            barras = plt.bar(posiciones, juegos_vendidos, color='#E67300')
+            nombres_meses = ["Enero", "Febrero", "Marzo", "Abril", "Mayo", "Junio", "Julio", "Agosto", "Septiembre", "Octubre", "Noviembre", "Diciembre"]
 
-            plt.xticks(posiciones, estudios, rotation=45, ha='right')
-            plt.ylabel('Cantidad de Juegos Vendidos')
-            plt.xlabel('Estudio')
-            plt.title(f"Total de Juegos Vendidos por Estudio - Año {ano}")
-
-            for barra, total in zip(barras, juegos_vendidos):
-                plt.text(barra.get_x() + barra.get_width()/2, barra.get_height() + 1,
-                        str(total), va='bottom', ha='center', fontsize=9, color='black')
-
+            plt.figure(figsize=(14, 7))
+            plt.plot(nombres_meses, ventas_hombres, marker='o', color='blue', linewidth=2, label='Hombres')
+            plt.plot(nombres_meses, ventas_mujeres, marker='o', color='magenta', linewidth=2, label='Mujeres')
+            for x, y in zip(nombres_meses, ventas_hombres):
+                plt.text(x, y, str(y), ha='center', va='bottom', fontsize=9, color='blue', fontweight='bold')
+            for x, y in zip(nombres_meses, ventas_mujeres):
+                plt.text(x, y, str(y), ha='center', va='bottom', fontsize=9, color='magenta', fontweight='bold')
+            plt.ylabel('Total de Ventas')
+            plt.xlabel('Mes')
+            plt.title(f"Total de ventas por mes y género (Hombres/Mujeres) - Año {ano}")
+            plt.legend()
             plt.tight_layout()
+            plt.subplots_adjust(bottom=0.2)
 
-            # Crear carpeta y guardar gráfico
-            carpeta = "graficos"
+            carpeta = os.path.join("graficos", str(ano))
             os.makedirs(carpeta, exist_ok=True)
-            archivo = os.path.join(carpeta, f'juegos_vendidos_por_estudio_{ano}.png')
+            archivo = os.path.join(carpeta, f'ventas_por_mes_hombres_mujeres_{ano}.png')
             plt.savefig(archivo)
             plt.close()
+            print(f"Gráfico guardado en: {archivo}")
+
         elif n == 5:
             query = """
-            select 
-                EXTRACT(MONTH FROM fecha_compra) AS mes,
-                j.formato AS formato_juego,
-                SUM(hv.precio_clp) AS ingresos_totales_clp
-            from hechos_ventas hv
-            JOIN juego j ON hv.id_juego = j.id_juego
-            JOIN sucursal s ON hv.id_sucursal = s.id_sucursal
-            WHERE EXTRACT(YEAR FROM hv.fecha_compra) = %s
-            GROUP BY j.formato, mes
-            order by mes, ingresos_totales_clp desc
+                SELECT 
+                    EXTRACT(MONTH FROM hv.fecha_compra) AS mes,
+                    f.formato AS formato_juego,
+                    SUM(hv.precio_clp) AS ingresos_totales_clp
+                FROM hechos_ventas hv
+                JOIN formato f ON hv.id_formato = f.id_formato
+                WHERE EXTRACT(YEAR FROM hv.fecha_compra) = %s
+                GROUP BY f.formato, mes
+                ORDER BY mes, ingresos_totales_clp DESC;
             """
             cursor.execute(query, (ano,))
             resultados = cursor.fetchall()
@@ -274,7 +276,7 @@ def graficar_ventas(n, ano):
             plt.tight_layout()
 
             # Crear carpeta si no existe
-            carpeta = "graficos"
+            carpeta = os.path.join("graficos", str(ano))
             os.makedirs(carpeta, exist_ok=True)
             archivo = os.path.join(carpeta, f'ingresos_por_formato_mensual_{ano}.png')
             plt.savefig(archivo)
@@ -284,14 +286,15 @@ def graficar_ventas(n, ano):
         elif n == 6:
             query = """
                 SELECT 
-                    j.genero,
-                    j.formato,
+                    g.nombre_genero AS genero,
+                    f.formato AS formato,
                     COUNT(*) AS total
                 FROM hechos_ventas hv
-                JOIN juego j ON hv.id_juego = j.id_juego
+                JOIN genero g ON hv.id_genero = g.id_genero
+                JOIN formato f ON hv.id_formato = f.id_formato
                 WHERE EXTRACT(YEAR FROM hv.fecha_compra) = %s
-                GROUP BY j.genero, j.formato
-                ORDER BY j.genero, total DESC;
+                GROUP BY g.nombre_genero, f.formato
+                ORDER BY g.nombre_genero, total DESC;
             """
             cursor.execute(query, (ano,))
             resultados = cursor.fetchall()
@@ -324,9 +327,9 @@ def graficar_ventas(n, ano):
             plt.legend()
             plt.tight_layout()
 
-            carpeta = "graficos"
+            carpeta = os.path.join("graficos", str(ano))
             os.makedirs(carpeta, exist_ok=True)
-            archivo = os.path.join(carpeta, f'formato_por_genero{ano}.png')
+            archivo = os.path.join(carpeta, f'formato_por_genero_{ano}.png')
             plt.savefig(archivo)
             plt.close()
             print(f"Gráfico guardado en: {archivo}")
@@ -341,20 +344,6 @@ def graficar_ventas(n, ano):
         print("Error al conectar o consultar la base de datos:", e)
 
 if __name__ == "__main__":
-    n = 0
-    while n < 1 or n > 6:
-        try:
-            n = int(input("Ingrese el número de la opción deseada:\n"
-                "1. Ingresos por formato y región\n"
-                "2. Ingresos históricos por formato de juego en cada región\n"
-                "3. Total de compras multijugador por rango etario\n"
-                "4. Total de juegos vendidos por estudio de videojuegos\n"
-                "5. Total de juegos vendidos por mes en formato fisico y digital\n"
-                "6. Formato mas vendido por genero de videojuegos\n"
-            ))
-        except ValueError:
-            print("Por favor, ingrese un número válido.")
-            continue
     while True:
         try:
             ano = int(input("Ingrese el año para filtrar las ventas (por ejemplo, 2023): "))
@@ -365,4 +354,8 @@ if __name__ == "__main__":
         except ValueError:
             print("Por favor, ingrese un número válido para el año.")
 
-    graficar_ventas(n, ano)
+    # Generar los 6 gráficos automáticamente
+    for n in range(1, 7):
+        print(f"\nGenerando gráfico {n}...")
+        graficar_ventas(n, ano)
+    print("\nTodos los gráficos han sido generados.")

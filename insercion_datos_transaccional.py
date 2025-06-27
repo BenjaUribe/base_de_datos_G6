@@ -5,9 +5,9 @@ import datetime
 import time
 
 conn = psycopg2.connect(
-    dbname="venta_juegos_t",
-    user="admin",
-    password="Admin132",
+    dbname="base_datos_t",
+    user="postgres",
+    password="0987",
     host="localhost",
     port="5432"
 )

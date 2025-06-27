@@ -5,16 +5,16 @@ import datetime
 import time
 
 conn = psycopg2.connect(
-    dbname="base_datos_t",
+    dbname="Base_datos_t",
     user="postgres",
-    password="0987",
+    password="zawarudo",
     host="localhost",
     port="5432"
 )
 cursor = conn.cursor()
 fake = Faker('es_ES')
 
-cant_datos = 50000
+cant_datos = 15000
 
 #agregar los diccionarios de comuna_region, sucursal_comuna, juegos_estuidiom, info_juegos
 comunas_region = {"Región de Arica y Parinacota" : ["Arica"],

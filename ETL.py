@@ -7,14 +7,14 @@ import schedule
 ANALISIS = {
     "dbname": "base_datos",
     "user": "postgres",
-    "password": "0987",
+    "password": "zawarudo",
     "host": "localhost",
     "port": "5432"
 }
 TRANSACCIONAL = {
     "dbname": "Base_datos_t",
     "user": "postgres",
-    "password": "0987",
+    "password": "zawarudo",
     "host": "localhost",
     "port": "5432"
 }
@@ -247,6 +247,9 @@ def run_etl():
     print("Esperando la próxima sincronización...")
 
 if __name__ == "__main__":
+    # Ejecutar una vez al inicio
+    run_etl()
+
     def background_scheduler():
         schedule.every(1).minutes.do(run_etl)
         while True:

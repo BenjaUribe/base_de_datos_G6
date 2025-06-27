@@ -7,7 +7,7 @@ import time
 
 # Conectar a la base de datos PostgreSQL
 conn = psycopg2.connect(
-    dbname="venta_juegos",  # Cambia esto por el nombre de tu base de datos
+    dbname="base_datos",  # Cambia esto por el nombre de tu base de datos
     user="postgres",   # Cambia esto por tu nombre de usuario
     password="zawarudo",  # Cambia esto por tu contraseña
     host="localhost",     # Cambia esto si tu base de datos está en otro host
@@ -17,7 +17,7 @@ cursor = conn.cursor()
 
 fake = Faker('es_ES')
 
-cant_datos = 50000
+cant_datos = 15000
 
 juegos_estudio = {"SEGA": ["Sonic", "Yakuza", "Persona"],
                   "Mojang": ["Minecraft"], 

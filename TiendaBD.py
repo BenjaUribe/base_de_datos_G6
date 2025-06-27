@@ -8,7 +8,7 @@ def graficar_ventas(n, ano):
         conn = psycopg2.connect(
             dbname="base_datos",
             user="postgres",
-            password="0987",
+            password="zawarudo",
             host="localhost",
             port="5432"
         )
@@ -60,6 +60,8 @@ def graficar_ventas(n, ano):
             plt.ylabel('Ingresos CLP')
             plt.title(f'Ingresos por Formato y Región - Año {ano}')
             plt.legend()
+            import matplotlib.ticker as mticker
+            plt.gca().yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, p: format(int(x), ',')))
             plt.tight_layout()
 
             # Guardar gráfico
@@ -273,6 +275,8 @@ def graficar_ventas(n, ano):
             plt.ylabel('Ingresos CLP')
             plt.title(f'Ingresos por formato en cada mes - Año {ano}')
             plt.legend()
+            import matplotlib.ticker as mticker
+            plt.gca().yaxis.set_major_formatter(mticker.FuncFormatter(lambda x, p: format(int(x), ',')))
             plt.tight_layout()
 
             # Crear carpeta si no existe

@@ -7,9 +7,9 @@ import os
 import time
 
 DB_CONFIG = {
-    "dbname": "venta_juegos_t",
-    "user": "admin",
-    "password": "Admin132",
+    "dbname": "Base_datos_t",
+    "user": "postgres",
+    "password": "zawarudo",
     "host": "localhost",
     "port": "5432"
 }
